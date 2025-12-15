@@ -1,3 +1,7 @@
+import GraphNode
+from DataTypes.Tile import Tile
+
+
 class Point:
     def __init__(self, board_list, y, x):
         self.board_list = board_list
@@ -7,29 +11,14 @@ class Point:
         self.size = 1
         self.connected_tiles = set()
         # this is made to clean up the board list
-        self.adjacent = set()
+        self.adjacent: set[Point] = set()
+        # used when making graph of nodes
+        self.adjacent_tiles: set[Tile] = set()
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self
         self.coords.append([y, x])
         self.size += 1
-
-    def find_all_adjacent(self):
-        new_adjacent1 = set()
-        new_adjacent2 = set()
-        for point in self.adjacent:
-            for adjacent_point in point.adjacent:
-                if adjacent_point != self:
-                    new_adjacent1.add(adjacent_point)
-        while len(new_adjacent1) != len(new_adjacent2):
-            if len(new_adjacent2) > 0:
-                new_adjacent1 = new_adjacent2.copy()
-                new_adjacent2 = set()
-            for point in new_adjacent1:
-                for adjacent_point in point.adjacent:
-                    if adjacent_point != self:
-                        new_adjacent2.add(point)
-        self.adjacent = new_adjacent2.copy()
 
     def add_adjacent(self, new):
         if new != self:

@@ -1,209 +1,233 @@
-from functools import reduce
+from operator import itemgetter
 
-import numpy
 import numpy as np
+
+import Debug
 import ImageStuff
 import cv2
 
-from Point import Point
+import ProjectEnums
+from DataTypes.Board import Board
+from DataTypes.Point import Point
+from DataTypes.Tile import Tile
+from DataTypes.YellowNumber import YellowNumber
 from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
-from Tile import Tile
 
-
-def color_equal(color1, color2):
-    """finds if 2 colors are equal"""
-    #checks for if we are using ints or lists
-    try:
-        if not len(color1) == len(color2):
-            return False
-    except TypeError:
-        return color1 == color2
-    return reduce(lambda bool1, bool2: bool1 and bool2, [color1[index] == color2[index] for index in range(0, len(color1))])
-
-def non_background_near(edge_image, y, x) -> bool:
-    """returns true if any pixels surrounding the position are not 255 (background color on the edge image)
-        :param pos (y, x)
-    """
-    for y_off in range(-1,2):
-        for x_off in range(-1,2):
-            if not (x_off == 0 and y_off == 0):
-                if edge_image[y + y_off][x + x_off] != CommonGrayscaleColors.background.value:
-                    return True
-    return False
-
-def remove_surrounding_non_void(image, edge_image, y, x, pos_seen_set: set[str]):
-    """sets position to void if it isn't already then finds all positions surrounding it and calls itself on them \n
-        returns if pos is void or seen before
-        :param image image of board
-        :param edge_image image of board where background has been removed
-        :param pos_seen_set set of positions seen
-    """
-    if color_equal(image[y][x], CommonRGBColors.background.value):
-        return
-    if f'{y},{x}' in pos_seen_set:
-        return
-    edge_image[y][x] = CommonGrayscaleColors.background.value
-    pos_seen_set.add(f'{y},{x}')
+def add_yellow_number(board_list, y, x, outer_yellow_number_set):
+    surrounding_yellow_numbers: set[YellowNumber] = set()
     for y_offset in range(-1, 2):
         for x_offset in range(-1, 2):
             if y_offset != 0 and x_offset != 0:
-                remove_surrounding_non_void(image, edge_image, y + y_offset, x + x_offset, pos_seen_set)
+                if (board_list[y + y_offset][x + x_offset] is not None) and board_list[y + y_offset][
+                    x + x_offset].__class__ == YellowNumber:
+                    surrounding_yellow_numbers.add(board_list[y + y_offset][x + x_offset])
+    if len(surrounding_yellow_numbers) == 0:
+        outer_yellow_number_set.add(YellowNumber(board_list, y, x))
+    elif len(surrounding_yellow_numbers) == 1:
+        surrounding_yellow_numbers.pop().add_coord(y, x)
+    else:
+        sorted([[yellow_number.size, yellow_number] for yellow_number in surrounding_yellow_numbers], key=itemgetter(0), reverse=True)[0][1].add_coord(y, x)
+        for yellow_number in surrounding_yellow_numbers:
+            for other_yellow_number in surrounding_yellow_numbers:
+                if other_yellow_number != yellow_number:
+                    yellow_number.add_adjacent(other_yellow_number)
 
-def remove_yellow_numbers(image, edge_image):
-    pos_seen = set()
-    """removes yellow parts of image from edge_image"""
-    for y in range(image.shape[0]):
-        for x in range(image.shape[1]):
-            if color_equal(image[y][x], CommonRGBColors.yellow.value) and not f'{y},{x}' in pos_seen:
-                print(f'started removing lemon at ({x},{y})')
-                remove_surrounding_non_void(image, edge_image, y, x, pos_seen)
 
 def add_point(board_list, y, x, outer_point_set):
-    point_set: set[Point] = set()
+    surrounding_points: set[Point] = set()
     for y_offset in range(-1, 2):
         for x_offset in range(-1, 2):
             if y_offset != 0 and x_offset != 0:
                 if (board_list[y + y_offset][x + x_offset] is not None) and board_list[y + y_offset][
                     x + x_offset].__class__ == Point:
-                    point_set.add(board_list[y + y_offset][x + x_offset])
-    if len(point_set) == 0:
+                    surrounding_points.add(board_list[y + y_offset][x + x_offset])
+    if len(surrounding_points) == 0:
         outer_point_set.add(Point(board_list, y, x))
-    elif len(point_set) == 1:
-        point_set.pop().add_coord(y, x)
+    elif len(surrounding_points) == 1:
+        surrounding_points.pop().add_coord(y, x)
     else:
-        point_list = [[point.size, point] for point in point_set]
-        largest_point_array = [0, None]
-        for point_array in point_list:
-            if point_array[0] > largest_point_array[0]:
-                largest_point_array = point_array
-        largest_point_array[1].add_coord(y, x)
-        for point in point_set:
-            for other_point in point_set:
+        sorted([[point.size, point] for point in surrounding_points], key=itemgetter(0), reverse=True)[0][1].add_coord(y, x)
+        for point in surrounding_points:
+            for other_point in surrounding_points:
                 if other_point != point:
                     point.add_adjacent(other_point)
 
 def add_tile(board_list, y: int, x: int, outer_tile_set: set[Tile]):
-    tile_set: set[Tile] = set()
+    surrounding_tiles: set[Tile] = set()
     for y_offset in range(-1, 2):
         for x_offset in range(-1, 2):
-            if y_offset != 0 and x_offset != 0:
+            if y_offset == 0 or x_offset == 0 and not (y_offset == 0 and x_offset == 0):
                 if (board_list[y + y_offset][x + x_offset] is not None) and board_list[y + y_offset][x + x_offset].__class__ == Tile:
-                    tile_set.add(board_list[y + y_offset][x + x_offset])
-    if len(tile_set) == 0:
+                    surrounding_tiles.add(board_list[y + y_offset][x + x_offset])
+    if len(surrounding_tiles) == 0:
         outer_tile_set.add(Tile(board_list, y, x))
-    elif len(tile_set) == 1:
-        tile_set.pop().add_coord(y, x)
+    elif len(surrounding_tiles) == 1:
+        surrounding_tiles.pop().add_coord(y, x)
     else:
-        tile_list = [[tile.size, tile] for tile in tile_set]
-        largest_tile_array = [0, None]
-        for tile_array in tile_list:
-            if tile_array[0] > largest_tile_array[0]:
-                largest_tile_array = tile_array
-        largest_tile_array[1].add_coord(y, x)
-        for tile in tile_set:
-            for other_tile in tile_set:
+        sorted([[tile.size, tile] for tile in surrounding_tiles], key=itemgetter(0), reverse=True)[0][1].add_coord(y, x)
+        for tile in surrounding_tiles:
+            for other_tile in surrounding_tiles:
                 if other_tile != tile:
                     tile.add_adjacent(other_tile)
 
+def walk_to_next_tile(y, x, y_off, x_off, board_list, current_tile: Tile):
+    """uses raytracing to find if a tile is adjacent to another tile at a given point"""
+    if board_list[y + y_off][x + x_off] is not None:
+        return
+    for off_off in range(2,6):
+        if board_list[y + (y_off * off_off)][x + (x_off * off_off)].__class__ == Tile:
+            current_tile.graph_node.add_node(board_list[y + (y_off * off_off)][x + (x_off * off_off)].graph_node)
+        elif board_list[y + (y_off * off_off)][x + (x_off * off_off)] is not None:
+            return
 
+def find_all_colors(tile_set) -> set:
+    colors = set()
+    for tile in tile_set:
+        tile.find_majority_color(board_data.image)
+    for tile in tile_set:
+        if not tile.revealed:
+            colors.add(tile.color)
+    return colors
 
 if __name__ == '__main__':
     image: np.ndarray = ImageStuff.get_screenshot_on_key_press()
-    edge_image: np.ndarray = cv2.cvtColor(image.copy(), cv2.COLOR_RGB2GRAY)
-    print("frying chicken in water (finding background)")
-    print(image.shape)
-    for y in range(image.shape[0]):
-        for x in range(image.shape[1]):
-            if color_equal(image[y][x], CommonRGBColors.background.value):
-                edge_image[y][x] = CommonGrayscaleColors.background.value
-            else:
-                edge_image[y][x] = 0
-    print("chicken fried")
-    print("starting to remove lemons (removing line numbers)")
-    remove_yellow_numbers(image, edge_image)
-    print("lemons removed")
-    ImageStuff.remove_UI(edge_image)
-    #image needs to be blurred as hexagon shaped tiles will have points along every edge if we don't
-    blurry_edge_image = cv2.blur(edge_image.copy(), (5,5))
-    cv2.imwrite("Images/cleaned_edge_image.png", edge_image)
-    point_image = cv2.cvtColor(edge_image.copy(), cv2.COLOR_GRAY2RGB)
-    print("restore it (find vertices)")
+    board_data = Board(image)
+    edge_image: np.ndarray = board_data.binary_image
+    board_list = [[None for x in range(edge_image.shape[1])] for y in range(edge_image.shape[0])]
+
+    yellow_number_set: set[YellowNumber] = set()
+    for y in range(1, board_data.binary_image.shape[0] - 1):
+        for x in range(1, board_data.binary_image.shape[1] - 1):
+            if ImageStuff.color_equal(board_data.image[y][x], CommonRGBColors.yellow.value):
+                add_yellow_number(board_list, y, x, yellow_number_set)
+    for do_number_of_times in range(3):
+        for yellow_number in yellow_number_set:
+            yellow_number.expand(board_data.image)
+    print("-cleaning yellow_numbers")
+    while (sum([len(yellow_number.adjacent) for yellow_number in yellow_number_set])/len(yellow_number_set)) != 0:
+        print(f'--{len(yellow_number_set)} yellow_numbers remain')
+        print(f'--average number of adjacent yellow_numbers per yellow_number: {sum([len(tile.adjacent) for tile in yellow_number_set])/len(yellow_number_set)}')
+        for yellow_number in yellow_number_set:
+            yellow_number.overwrite_adjacent()
+        #removes all tiles that no longer are on the board
+        yellow_numbers_to_remove = set()
+        for yellow_number in yellow_number_set:
+            if board_list[yellow_number.coords[0][0]][yellow_number.coords[0][1]] != yellow_number:
+                yellow_numbers_to_remove.add(yellow_number)
+        for yellow_number in yellow_numbers_to_remove:
+            yellow_number_set.remove(yellow_number)
+        #get all new adjacent
+        for yellow_number in yellow_number_set:
+            for coord in yellow_number.coords:
+                for y_off in range(-1, 2):
+                    for x_off in range(-1, 2):
+                        if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
+                            if board_list[coord[0] + y_off][coord[1] + x_off].__class__ == YellowNumber:
+                                yellow_number.add_adjacent(board_list[coord[0] + y_off][coord[1] + x_off])
+    print("-yellow_numbers cleaned")
+    print(f'{len(yellow_number_set)} yellow numbers in board')
+    for yellow_number in yellow_number_set:
+        for coord in yellow_number.coords:
+            board_data.binary_image[coord[0]][coord[1]] = ProjectEnums.CommonGrayscaleColors.BACKGROUND.value
+    cv2.imwrite("Images/cleaned_edge_image.png", board_data.binary_image)
+
+    #image needs to be blurred as hexagon shaped tiles will have points at every pixel along their edges if we don't
+    blurry_edge_image = cv2.blur(board_data.binary_image.copy(), (5,5))
+    point_image = cv2.cvtColor(board_data.binary_image.copy(), cv2.COLOR_GRAY2RGB)
+    print("restore it (find points)")
+    point_set = set()
+    tile_set = set()
     blurry_edge_image = np.float32(blurry_edge_image)
     dst = cv2.cornerHarris(blurry_edge_image, 2,9, 0.01)
     dst = cv2.dilate(dst, None)
-    point_image[dst > 0.01 * dst.max()] = CommonRGBColors.point.value
+    point_image[dst > 0.005 * dst.max()] = CommonRGBColors.point.value
     print("and run it on the main line")
     for y in range(edge_image.shape[0]):
         for x in range(edge_image.shape[1]):
-            if color_equal(edge_image[y][x], CommonGrayscaleColors.tile.value):
+            if ImageStuff.color_equal(edge_image[y][x], CommonGrayscaleColors.TILE.value):
                 point_image[y][x] = CommonRGBColors.tile.value
     cv2.imwrite("Images/point_image.png", point_image)
-    board_list = [[None for x in range(point_image.shape[1])] for y in range(point_image.shape[0])]
-    tile_set = set()
-    point_set = set()
     new_tile = True
     for y in range(1, point_image.shape[0] - 1):
         for x in range(1, point_image.shape[1] - 1):
-            if color_equal(point_image[y][x], CommonRGBColors.point.value):
+            if ImageStuff.color_equal(point_image[y][x], CommonRGBColors.point.value):
                 add_point(board_list, y, x, point_set)
-            elif color_equal(point_image[y][x], CommonRGBColors.tile.value):
+            elif ImageStuff.color_equal(point_image[y][x], CommonRGBColors.tile.value):
                 add_tile(board_list, y, x, tile_set)
-    print("c")
-    for tile in tile_set:
-        tile.overwrite_adjacent()
-    print("d")
-    for point in point_set:
-        point.overwrite_adjacent()
-    while sum([len(tile.adjacent) for tile in tile_set])/len(tile_set) != 0:
-        tile_set = set()
-        point_set = set()
-        for y in range(1, point_image.shape[0] - 1):
-            for x in range(1, point_image.shape[1] - 1):
-                surrounding = set()
-                if board_list[y][x] is None:
-                    continue
-                for y_offset in range(-1, 2):
-                    for x_offset in range(-1, 2):
-                        if board_list[y + y_offset][x + x_offset] is None:
-                            continue
-                        if board_list[y][x].__class__ is board_list[y + y_offset][x + x_offset].__class__:
-                            board_list[y][x].add_adjacent(board_list[y + y_offset][x + x_offset])
-                        if board_list[y][x].__class__ is Tile:
-                            tile_set.add(board_list[y][x])
-                        if board_list[y][x].__class__ is Point:
-                            point_set.add(board_list[y][x])
-        print("c2")
-        print(len(tile_set))
-        print(sum([len(tile.adjacent) for tile in tile_set])/len(tile_set))
+
+    print("cleaning points and tiles")
+    print("-cleaning tiles")
+    while (sum([len(tile.adjacent) for tile in tile_set])/len(tile_set)) != 0:
+        print(f'--{len(tile_set)} tiles remain')
+        print(f'--average number of adjacent tiles per tile: {sum([len(tile.adjacent) for tile in tile_set])/len(tile_set)}')
         for tile in tile_set:
             tile.overwrite_adjacent()
-        print("d2")
+        #removes all tiles that no longer are on the board
+        tiles_to_remove = set()
+        for tile in tile_set:
+            if board_list[tile.coords[0][0]][tile.coords[0][1]] != tile:
+                tiles_to_remove.add(tile)
+        for tile in tiles_to_remove:
+            tile_set.remove(tile)
+        #get all new adjacent
+        for tile in tile_set:
+            for coord in tile.coords:
+                for y_off in range(-1, 2):
+                    for x_off in range(-1, 2):
+                        if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
+                            if board_list[coord[0] + y_off][coord[1] + x_off].__class__ == Tile:
+                                tile.add_adjacent(board_list[coord[0] + y_off][coord[1] + x_off])
+    print("-tiles cleaned")
+    print("-cleaning points")
+    while (sum([len(point.adjacent) for point in point_set])/len(point_set)) != 0:
+        print(f'--{len(point_set)} points remain')
+        print(f'--average number of adjacent points per point: {sum([len(point.adjacent) for point in point_set])/len(point_set)}')
         for point in point_set:
             point.overwrite_adjacent()
+        points_to_remove = set()
+        for point in point_set:
+            if board_list[point.coords[0][0]][point.coords[0][1]] != point:
+                points_to_remove.add(point)
+        for point in points_to_remove:
+            point_set.remove(point)
+        for point in point_set:
+            for coord in point.coords:
+                for y_off in range(-1, 2):
+                    for x_off in range(-1, 2):
+                        if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
+                            if board_list[coord[0] + y_off][coord[1] + x_off].__class__ == Point:
+                                point.add_adjacent(board_list[coord[0] + y_off][coord[1] + x_off])
+    print("-points cleaned")
+    print(f'{len(tile_set)} tiles and {len(point_set)} points in board')
+    Debug.create_board_list_debug_image("Images/debug_image.png", point_image, board_list)
 
+    color_set = find_all_colors(tile_set)
 
-    debug_image = point_image.copy()
-    tile_count = 0
-    point_count = 0
-    tile_map: dict[Tile, int] = dict()
-    point_map: dict[Point, int] = dict()
-    for y in range(len(board_list)):
-        for x in range(len(board_list[0])):
-            if board_list[y][x] is None:
-                debug_image[y][x] = CommonRGBColors.debug_white.value
-            elif board_list[y][x].__class__ == Tile:
-                if board_list[y][x] not in tile_map.keys():
-                    tile_map[board_list[y][x]] = tile_count * 10
-                    tile_count += 1
-                    tile_count = tile_count % 20
-                debug_image[y][x] = [0, 255, tile_map[board_list[y][x]]]
-            else:
-                if board_list[y][x] not in point_map.keys():
-                    point_map[board_list[y][x]] = point_count * 10
-                    point_count += 1
-                    point_count = point_count % 20
-                debug_image[y][x] = [255, 0, point_map[board_list[y][x]]]
-    cv2.imwrite("Images/debug_image4.png", debug_image)
-
-
-
+    print("creating graph from tile set")
+    graph_node_set = set()
+    if board_data.point_based_adjacency:
+        print("-using point based adjacency")
+        for point in point_set:
+            for coord in point.coords:
+                for y_off in range(-1, 2):
+                    for x_off in range(-1, 2):
+                        if not (x_off == 0 and y_off == 0):
+                            if board_list[coord[0] + y_off][coord[1] + x_off].__class__ == Tile:
+                                point.adjacent_tiles.add(board_list[coord[0] + y_off][coord[1] + x_off])
+        for point in point_set:
+            for tile in point.adjacent_tiles:
+                graph_node_set.add(tile.graph_node)
+                for other_tile in point.adjacent_tiles:
+                    if other_tile != tile:
+                        tile.graph_node.add_node(other_tile.graph_node)
+                        other_tile.graph_node.add_node(tile.graph_node)
+    else:
+        print("-using non-point based adjacency")
+        for tile in tile_set:
+            graph_node_set.add(tile.graph_node)
+            for coord in tile.coords:
+                for y_off in range(-1, 2):
+                    for x_off in range(-1, 2):
+                        if not (x_off == 0 and y_off == 0):
+                            walk_to_next_tile(coord[0], coord[1], y_off, x_off, board_list, tile)
+    print("graph created")
