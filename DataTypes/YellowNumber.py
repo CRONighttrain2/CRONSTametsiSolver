@@ -32,6 +32,9 @@ class YellowNumber:
                     self.coords.append([coord[0], coord[1]])
                     self.size += 1
 
+    def get_size(self):
+        return self.size
+
     def expand(self, board_image):
         """expands the yellow number into adjacent non-background, non-filled pixels on the board_list"""
         new_coords = list()

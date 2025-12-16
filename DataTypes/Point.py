@@ -20,6 +20,9 @@ class Point:
         self.coords.append([y, x])
         self.size += 1
 
+    def get_size(self):
+        return self.size
+
     def add_adjacent(self, new):
         if new != self:
             self.adjacent.add(new)

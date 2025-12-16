@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 import ImageStuff
@@ -23,3 +24,15 @@ class Board:
         image_without_mine_counts = ImageStuff.remove_mine_counts(self.image, ProjectEnums.CommonRGBColors.background.value)
         self.binary_image = ImageStuff.create_binary_image(image_without_mine_counts, ProjectEnums.CommonRGBColors.background.value)
 
+    def create_point_image(self):
+        self.points_image = cv2.cvtColor(self.binary_image.copy(), cv2.COLOR_GRAY2RGB)
+        # image needs to be blurred as hexagon shaped tiles will have points at every pixel along their edges if we don't
+        blurry_binary_image = cv2.blur(self.binary_image.copy(), (5, 5))
+        blurry_binary_image = np.float32(blurry_binary_image)
+        dst = cv2.cornerHarris(blurry_binary_image, 2, 9, 0.01)
+        dst = cv2.dilate(dst, None)
+        self.points_image[dst > 0.005 * dst.max()] = ProjectEnums.CommonRGBColors.point.value
+        for y in range(self.binary_image.shape[0]):
+            for x in range(self.binary_image.shape[1]):
+                if ImageStuff.color_equal(self.binary_image[y][x], ProjectEnums.CommonGrayscaleColors.TILE.value):
+                    self.points_image[y][x] = ProjectEnums.CommonRGBColors.tile.value
