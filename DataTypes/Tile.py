@@ -1,4 +1,7 @@
-import GraphNode
+import numpy as np
+
+from DataTypes import GraphNode
+
 
 class Tile:
     def __init__(self, board_list, y, x):
@@ -11,7 +14,6 @@ class Tile:
         self.coords.append([y, x])
         self.graph_node: GraphNode.Node = GraphNode.Node(self)
         self.color = None
-        self.revealed = False
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self
@@ -36,24 +38,24 @@ class Tile:
                     self.coords.append([coord[0], coord[1]])
                     self.size += 1
 
-    def find_majority_color(self, image):
+    def find_majority_color(self, image: np.ndarray):
         color_map: dict[str, int] = dict()
         for coord in self.coords:
             if str(image[coord[0]][coord[1]]) not in color_map.keys():
                 color_map.update({str(image[coord[0]][coord[1]]): 0})
             color_map[str(image[coord[0]][coord[1]])] += 1
-            if color_map[str(image[coord[0]][coord[1]])] > len(self.coords)/2:
+            #if we have looked at a quarter of the tile we already will know the most prevalent color
+            if sum(color_map.values()) > (image.shape[0] * image.shape[1])/4:
                 break
-        biggest_color = ["", 0]
-        for color in color_map.keys():
-            if color_map[color] > biggest_color[1]:
-                biggest_color[0] = color
-                biggest_color[1] = color_map[color]
-        color_list = [int(num) for num in biggest_color[0].replace("[","").replace("]","").split()]
+        biggest_color = max({color_map[key]: key for key in color_map.keys()}.items())[1]
+        color_list = [int(num) for num in biggest_color.replace("[","").replace("]","").split()]
+        #pre-revealed tiles are always colored [51,51,51]
         if color_list == [51, 51, 51]:
             self.color = "51, 51, 51"
-            self.revealed = True
+            self.graph_node.reveal()
+        #every other tile where the colors are all the same will always be gray but the actual values in the gray vary on a per-tile basis so we need to do this
         elif color_list[0] == color_list[1] == color_list[2]:
             self.color = "120, 120, 120"
+        #all other colors
         else:
             self.color = f'{color_list[0]}, {color_list[1]}, {color_list[2]}'

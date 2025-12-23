@@ -48,4 +48,5 @@ def see_node_connections(tile_list, image: np.ndarray):
             for node in graph_node.connected_nodes:
                 for coord in node.node_tile.coords:
                     image_copy[coord[0]][coord[1]] = CommonRGBColors.debug_tile.value
-            cv2.imwrite(f'Debug_images/Adjacency_images/{tile.coords[0][0]}_{tile.coords[0][1]}_adjacency.png', image_copy)
+            cv2.imshow("image", image_copy)
+            cv2.waitKey(100000)
