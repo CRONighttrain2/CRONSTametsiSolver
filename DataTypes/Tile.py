@@ -1,6 +1,6 @@
 import numpy as np
 
-from DataTypes import GraphNode
+from DataTypes.GraphNode import Node
 
 
 class Tile:
@@ -12,8 +12,8 @@ class Tile:
         self.size = 1
         self.coords = list()
         self.coords.append([y, x])
-        self.graph_node: GraphNode.Node = GraphNode.Node(self)
         self.color = None
+        self.graph_node = Node()
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self

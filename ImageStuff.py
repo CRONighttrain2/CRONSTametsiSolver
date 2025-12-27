@@ -27,10 +27,16 @@ def remove_UI(image: np.ndarray, replacement_color)-> np.ndarray:
 
     new_image = image.copy()
 
-    UI_element_bounding_box_list: dict[str, list[list[int]]] = {"return_element": [[0, 0], [90, 90]], "drawtool / music note" : [[930, 1590], [1070, 1910]], "level name": [[500, 0], [1070, 100]]}
+    UI_element_bounding_box_list: dict[str, dict[str, dict[str,int]]] = {"return_element": {"left_edge" : {"y": 0, "x": 0},
+                                                                                            "right_edge" : {"y": 100, "x": 90}},
+                                                                    "drawtool / music note" : {"left_edge" : {"y": 930, "x": 1590},
+                                                                                               "right_edge" : {"y": 1080, "x": 1920}},
+                                                                    "level name": {"left_edge" : {"y": 500, "x": 0},
+                                                                                   "right_edge" : {"y": 1080, "x": 200}}}
     for element in UI_element_bounding_box_list.values():
-        for area_y in range(element[0][0], element[1][0]):
-            for area_x in range(element[0][1], element[1][1]):
+        #the y's and x's are divided by numbers because my original screen I used for this was 1920 x 1080
+        for area_y in range(int(image.shape[0] * (element["left_edge"]["y"] / 1080)), int(image.shape[0] * (element["right_edge"]["y"] / 1080))):
+            for area_x in range(int(image.shape[1] * (element["left_edge"]["x"] / 1920)), int(image.shape[1] * (element["right_edge"]["x"] / 1920))):
                 new_image[area_y][area_x] = replacement_color
     return new_image
 
@@ -42,10 +48,10 @@ def remove_mine_counts(image: np.ndarray, replacement_color)-> np.ndarray:
         raise TypeError("color is not the same size as colors in image")
 
     new_image = image.copy()
-
-    element_bounding_box = [[0, 1800], [400, 1900]]
-    for area_y in range(element_bounding_box[0][0], element_bounding_box[1][0]):
-        for area_x in range(element_bounding_box[0][1], element_bounding_box[1][1]):
+    #the y's and x's are divided by numbers because my original screen I used for this was 1920 x 1080
+    element_bounding_box: dict[str,dict[str,int]] = {"left_edge" : {"y": 0, "x": 1800},"right_edge" :  {"y": 400, "x": 1900}}
+    for area_y in range(int(image.shape[0] * (element_bounding_box["left_edge"]["y"]/1080)), int(image.shape[0] * (element_bounding_box["right_edge"]["y"]/1080))):
+        for area_x in range(int(image.shape[1] * (element_bounding_box["left_edge"]["x"]/1920)), int(image.shape[1] * (element_bounding_box["right_edge"]["x"]/1920))):
             new_image[area_y][area_x] = replacement_color
     return new_image
 
@@ -57,10 +63,10 @@ def remove_adjacency_symbol(image: np.ndarray, replacement_color)-> np.ndarray:
         raise TypeError("color is not the same size as colors in image")
 
     new_image = image.copy()
-
-    element_bounding_box = [[0, 1800], [80, 1900]]
-    for area_y in range(element_bounding_box[0][0], element_bounding_box[1][0]):
-        for area_x in range(element_bounding_box[0][1], element_bounding_box[1][1]):
+    #the y's and x's are divided by numbers because my original screen I used for this was 1920 x 1080
+    element_bounding_box: dict[str,dict[str,int]] = {"left_edge" : {"y": 0, "x": 1800},"right_edge" :  {"y": 80, "x": 1900}}
+    for area_y in range(int(image.shape[0] * (element_bounding_box["left_edge"]["y"]/1080)), int(image.shape[0] * (element_bounding_box["right_edge"]["y"]/1080))):
+        for area_x in range(int(image.shape[1] * (element_bounding_box["left_edge"]["x"]/1920)), int(image.shape[0] * (element_bounding_box["right_edge"]["x"]/1920))):
             new_image[area_y][area_x] = replacement_color
     return new_image
 

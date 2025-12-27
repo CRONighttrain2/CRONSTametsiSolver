@@ -1,10 +1,6 @@
-from DataTypes.Tile import Tile
-
-
 class Node:
-    def __init__(self, tile):
+    def __init__(self):
         self.connected_nodes: set[Node] = set()
-        self.node_tile: Tile = tile
         self.revealed = False
 
     def add_node(self, new_node):

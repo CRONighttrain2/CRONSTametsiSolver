@@ -1,12 +1,14 @@
-from functools import singledispatch, singledispatchmethod, wraps
+from functools import singledispatchmethod
 from operator import methodcaller
+
+import numpy as np
 
 import ImageStuff
 from DataTypes.Board import Board
 from DataTypes.Point import Point
 from DataTypes.Tile import Tile
 from DataTypes.YellowNumber import YellowNumber
-from ProjectEnums import CommonRGBColors
+from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
 
 
 class BoardList:
@@ -18,7 +20,73 @@ class BoardList:
         self.point_set: set[Point] = set()
         self.tile_set: set[Tile] = set()
 
-    def find_all_in_image(self,image, obj_color, outer_set, set_type):
+    def get_yellow_numbers(self, board_data: Board):
+        """finds all yellow_number in the yellow number image then cleans them up"""
+        self.find_all_yellow_numbers(board_data = board_data)
+        if len(self.yellow_number_set) > 0:
+            #the yellow numbers have edges that aren't the same color so we need to blob out from them
+            for yellow_number in self.yellow_number_set:
+                for do_number_of_times in range(3):
+                    yellow_number.expand(board_image = board_data.image)
+            self.clean_yellow_number_set()
+            #we need to remove the yellow numbers so it doesn't mess up the point image
+            for yellow_number in self.yellow_number_set:
+                for coord in yellow_number.coords:
+                    board_data.binary_image[coord[0]][coord[1]] = CommonGrayscaleColors.BACKGROUND.value
+
+
+    def get_points(self, board_data: Board):
+        """finds all points in the point image then cleans them up"""
+        self.find_all_points(board_data = board_data)
+        self.clean_point_set()
+
+    def get_tiles(self, board_data: Board):
+        """finds all tiles in the point image then cleans them up"""
+        self.find_all_tiles(board_data = board_data)
+        self.clean_tile_set()
+
+    def clean_set(self, outer_set:set, set_type):
+        """Consolidates adjacent objects that are both set type in board list by setting coords of the smaller one to be the larger one"""
+        print(f'-cleaning set of type {set_type.__name__}')
+        set_obj_w_no_adjacent: set = set()
+        while (sum([len(set_obj.adjacent) for set_obj in outer_set]) / len(outer_set)) != 0:
+            print(f'--{len(outer_set)} {set_type.__name__} remain')
+            print(f'--average number of adjacent {set_type.__name__}s per {set_type.__name__}: {sum([len(set_obj.adjacent) for set_obj in outer_set]) / len(outer_set)}')
+            for set_obj in outer_set:
+                set_obj.overwrite_adjacent()
+            #removes all tiles that no longer are on the board
+            set_obj_to_remove: set = set()
+            for set_obj in outer_set:
+                if self.get_obj_at_coord({"y": set_obj.coords[0][0], "x": set_obj.coords[0][1]}) != set_obj:
+                    set_obj_to_remove.add(set_obj)
+            for set_obj in set_obj_to_remove:
+                outer_set.remove(set_obj)
+            #get all new adjacent
+            for set_obj in outer_set:
+                if set_obj not in set_obj_w_no_adjacent:
+                    for coord in set_obj.coords:
+                        for y_off in range(-1, 2):
+                            for x_off in range(-1, 2):
+                                if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
+                                    if self.get_obj_at_coord({"y": coord[0] + y_off, "x": coord[1] + x_off}).__class__ == set_type:
+                                        set_obj.add_adjacent(self.get_obj_at_coord({"y": coord[0] + y_off, "x": coord[1] + x_off}))
+            #if the set_obj has no more adjacent, remove it from our searches
+            for set_obj in outer_set:
+                if len(set_obj.adjacent) == 0:
+                    set_obj_w_no_adjacent.add(set_obj)
+        print(f'-set of type {set_type.__name__} cleaned')
+        print(f'{len(outer_set)} in set of type {set_type.__name__}')
+
+    def clean_yellow_number_set(self):
+        self.clean_set(outer_set = self.yellow_number_set, set_type = YellowNumber)
+
+    def clean_tile_set(self):
+        self.clean_set(outer_set = self.tile_set, set_type = Tile)
+
+    def clean_point_set(self):
+        self.clean_set(outer_set = self.point_set, set_type = Point)
+
+    def find_all_in_image(self ,image: np.ndarray , obj_color: list[int] | tuple[int], outer_set: set, set_type):
         """finds all obj_color in image and maps it onto board_list with type set_type"""
         for y in range(len(self.board_list)):
             for x in range(len(self.board_list[0])):
@@ -54,21 +122,21 @@ class BoardList:
         for y_off in range(-1, 2):
             for x_off in range(-1, 2):
                 if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
-                    if (self.get_coord({"x": x + x_off, "y": y + y_off}) is not None) and self.get_coord({"x": x + x_off, "y": y + y_off}).__class__ == set_type:
-                        surrounding_pixels.add(self.get_coord({"x": x + x_off, "y": y + y_off}))
+                    if (self.get_obj_at_coord({"x": x + x_off, "y": y + y_off}) is not None) and self.get_obj_at_coord({"x": x + x_off, "y": y + y_off}).__class__ == set_type:
+                        surrounding_pixels.add(self.get_obj_at_coord({"x": x + x_off, "y": y + y_off}))
         if len(surrounding_pixels) == 0:
-            outer_set.add(set_type(self.board_list, y, x))
+            outer_set.add(set_type(board_list = self.board_list, y = y,x = x))
         elif len(surrounding_pixels) == 1:
-            surrounding_pixels.pop().add_coord(y, x)
+            surrounding_pixels.pop().add_coord(y = y,x = x)
         else:
-            max(surrounding_pixels, key=methodcaller("get_size")).add_coord(y, x)
+            max(surrounding_pixels, key=methodcaller("get_size")).add_coord(y = y, x = x)
             for pixel in surrounding_pixels:
                 for other_pixel in surrounding_pixels:
                     if other_pixel != pixel:
-                        pixel.add_adjacent(other_pixel)
+                        pixel.add_adjacent(new = other_pixel)
 
     @singledispatchmethod
-    def get_coord(self, coord:list[int]):
+    def get_obj_at_coord(self, coord_list:list[int]):
         """
         | implementation 1:
         | inputs = (coord: list[int], thing: Any)
@@ -81,13 +149,13 @@ class BoardList:
         | implementation 3:
         | inputs = (coord: dict[y: int, x: int])
         | gets the point at y = coord["y"],x = coord["x"] in board list"""
-        return self.board_list[coord[0]][coord[1]]
+        return self.board_list[coord_list[0]][coord_list[1]]
 
-    @get_coord.register
-    def _(self, coord: dict):
-        return self.board_list[coord["y"]][coord["x"]]
+    @get_obj_at_coord.register
+    def _(self, coord_dict: dict):
+        return self.board_list[coord_dict["y"]][coord_dict["x"]]
 
-    @get_coord.register
+    @get_obj_at_coord.register
     def _(self, y:int, x: int):
         return self.board_list[y][x]
 
