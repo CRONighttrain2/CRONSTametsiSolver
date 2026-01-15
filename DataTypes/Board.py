@@ -17,7 +17,7 @@ class Board:
         self.points_image: np.ndarray = None
     
     def find_adjacency_type(self):
-        return ImageStuff.color_equal(self.image[39][1849], ProjectEnums.CommonRGBColors.yellow.value) and ImageStuff.color_equal(self.image[71][1849], ProjectEnums.CommonRGBColors.yellow.value)
+        return ImageStuff.color_equal(self.image[(39/1080) * self.image.shape[0]][(1849/1920) * self.image.shape[1]], ProjectEnums.CommonRGBColors.yellow.value) and ImageStuff.color_equal(self.image[71][1849], ProjectEnums.CommonRGBColors.yellow.value)
 
     def create_binary_image_of_background(self):
         """turns image into a binary image with the background as white then stores it in binary_image"""

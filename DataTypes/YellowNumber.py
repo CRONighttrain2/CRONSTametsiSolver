@@ -1,5 +1,6 @@
 import ImageStuff
 import ProjectEnums
+from DataTypes.Pixel import Pixel
 
 
 class YellowNumber:
@@ -9,12 +10,12 @@ class YellowNumber:
         # this is made to clean up the board list
         self.adjacent = set()
         self.size = 1
-        self.coords = list()
-        self.coords.append([y, x])
+        self.coords: list[Pixel] = list()
+        self.coords.append(Pixel(y = y, x = x))
 
-    def add_coord(self, y, x):
+    def add_coord(self, y: int, x:int):
         self.board_list[y][x] = self
-        self.coords.append([y, x])
+        self.coords.append(Pixel(y = y, x = x))
         self.size += 1
 
     def add_adjacent(self, new):
@@ -27,9 +28,9 @@ class YellowNumber:
         if self.size >= max([yellow_number.size for yellow_number in self.adjacent]):
             while len(self.adjacent) > 0:
                 other_yellow_numbers = self.adjacent.pop()
-                for coord in other_yellow_numbers.coords:
-                    self.board_list[coord[0]][coord[1]] = self
-                    self.coords.append([coord[0], coord[1]])
+                for other_pixel in other_yellow_numbers.coords:
+                    self.board_list[other_pixel.y][other_pixel.x] = self
+                    self.coords.append(other_pixel)
                     self.size += 1
 
     def get_size(self):
@@ -37,14 +38,14 @@ class YellowNumber:
 
     def expand(self, board_image):
         """expands the yellow number into adjacent non-background, non-filled pixels on the board_list"""
-        new_coords = list()
-        for coord in self.coords:
+        new_pixels = list()
+        for pixel in self.coords:
             for y_off in range(-1, 2):
                 for x_off in range(-1, 2):
                         if not (x_off == 0 and y_off == 0):
-                            if self.board_list[coord[0] + y_off][coord[1] + x_off] is None:
-                                if not ImageStuff.color_equal(board_image[coord[0] + y_off][coord[1] + x_off], ProjectEnums.CommonRGBColors.background.value):
-                                    new_coords.append([coord[0] + y_off, coord[1] + x_off])
-        for coord in new_coords:
-            if coord not in self.coords:
-                self.add_coord(coord[0],coord[1])
+                            if self.board_list[pixel.y + y_off][pixel.x + x_off] is None:
+                                if not ImageStuff.color_equal(board_image[pixel.y + y_off][pixel.x + x_off], ProjectEnums.CommonRGBColors.background.value):
+                                    new_pixels.append(Pixel(y = pixel.y + y_off, x = pixel.x + x_off))
+        for pixel in new_pixels:
+            if pixel not in self.coords:
+                self.add_coord(y = pixel.y, x = pixel.x)

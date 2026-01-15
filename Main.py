@@ -58,12 +58,12 @@ if __name__ == '__main__':
     if board_data.point_based_adjacency:
         print("-using point based adjacency")
         for point in board_list.point_set:
-            for coord in point.coords:
+            for pixel in point.coords:
                 for y_off in range(-1, 2):
                     for x_off in range(-1, 2):
                         if not (x_off == 0 and y_off == 0):
-                            if  board_list.get_obj_at_coord({"y": coord[0] + y_off, "x": coord[1] + x_off}).__class__ == Tile:
-                                point.adjacent_tiles.add( board_list.get_obj_at_coord({"y": coord[0] + y_off, "x": coord[1] + x_off}))
+                            if  board_list.get_obj_at_coord(pixel.offset(y_off, x_off).as_dict()).__class__ == Tile:
+                                point.adjacent_tiles.add( board_list.get_obj_at_coord(pixel.offset(y_off, x_off).as_dict()))
         for point in board_list.point_set:
             for tile in point.adjacent_tiles:
                 graph_node_set.add(tile.graph_node)

@@ -1,12 +1,13 @@
 from DataTypes.Tile import Tile
+from DataTypes.Pixel import Pixel
 
 
 class Point:
     def __init__(self, board_list, y, x):
         self.board_list = board_list
         board_list[y][x] = self
-        self.coords = list()
-        self.coords.append([y, x])
+        self.coords: list[Pixel] = list()
+        self.coords.append(Pixel(y = y, x = x))
         self.size = 1
         self.connected_tiles = set()
         # this is made to clean up the board list
@@ -16,7 +17,7 @@ class Point:
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self
-        self.coords.append([y, x])
+        self.coords.append(Pixel(y = y, x = x))
         self.size += 1
 
     def get_size(self):
@@ -32,7 +33,7 @@ class Point:
         if self.size >= max([point.size for point in self.adjacent]):
             while len(self.adjacent) > 0:
                 other_point = self.adjacent.pop()
-                for coord in other_point.coords:
-                    self.board_list[coord[0]][coord[1]] = self
-                    self.coords.append([coord[0], coord[1]])
+                for other_pixel in other_point.coords:
+                    self.board_list[other_pixel.y][other_pixel.x] = self
+                    self.coords.append(other_pixel)
                     self.size += 1

@@ -8,6 +8,14 @@ import pyautogui
 from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
 
 
+def color_rgb(color):
+    """detects if a color is not an int"""
+    try:
+        len(color)
+    except TypeError:
+        return False
+    return True
+
 def get_screenshot_on_key_press() -> np.ndarray:
     """
     creates a screenshot when left alt is pressed and turns it into a numpi n dimensional array
@@ -66,7 +74,7 @@ def remove_adjacency_symbol(image: np.ndarray, replacement_color)-> np.ndarray:
     #the y's and x's are divided by numbers because my original screen I used for this was 1920 x 1080
     element_bounding_box: dict[str,dict[str,int]] = {"left_edge" : {"y": 0, "x": 1800},"right_edge" :  {"y": 80, "x": 1900}}
     for area_y in range(int(image.shape[0] * (element_bounding_box["left_edge"]["y"]/1080)), int(image.shape[0] * (element_bounding_box["right_edge"]["y"]/1080))):
-        for area_x in range(int(image.shape[1] * (element_bounding_box["left_edge"]["x"]/1920)), int(image.shape[0] * (element_bounding_box["right_edge"]["x"]/1920))):
+        for area_x in range(int(image.shape[1] * (element_bounding_box["left_edge"]["x"]/1920)), int(image.shape[1] * (element_bounding_box["right_edge"]["x"]/1920))):
             new_image[area_y][area_x] = replacement_color
     return new_image
 

@@ -1,23 +1,24 @@
 import numpy as np
 
 from DataTypes.GraphNode import Node
+from DataTypes.Pixel import Pixel
 
 
 class Tile:
     def __init__(self, board_list, y, x):
         self.board_list = board_list
         board_list[y][x] = self
-        # this is made to clean up the board list
         self.adjacent = set()
         self.size = 1
-        self.coords = list()
-        self.coords.append([y, x])
+        self.coords: list[Pixel] = list()
+        self.coords.append(Pixel(y = y, x = x))
         self.color = None
         self.graph_node = Node()
+        self.perimeter: list[Pixel] = list()
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self
-        self.coords.append([y, x])
+        self.coords.append(Pixel(y = y, x = x))
         self.size += 1
 
     def get_size(self):
@@ -33,17 +34,19 @@ class Tile:
         if self.size >= max([tile.size for tile in self.adjacent]):
             while len(self.adjacent) > 0:
                 other_tile = self.adjacent.pop()
-                for coord in other_tile.coords:
-                    self.board_list[coord[0]][coord[1]] = self
-                    self.coords.append([coord[0], coord[1]])
+                for pixel in other_tile.perimeter:
+                    self.perimeter.append(pixel)
+                for pixel in other_tile.coords:
+                    self.board_list[pixel.y][pixel.x] = self
+                    self.coords.append(Pixel(y = pixel.y, x = pixel.x))
                     self.size += 1
 
     def find_majority_color(self, image: np.ndarray):
         color_map: dict[str, int] = dict()
-        for coord in self.coords:
-            if str(image[coord[0]][coord[1]]) not in color_map.keys():
-                color_map.update({str(image[coord[0]][coord[1]]): 0})
-            color_map[str(image[coord[0]][coord[1]])] += 1
+        for pixel in self.coords:
+            if str(image[pixel.y][pixel.x]) not in color_map.keys():
+                color_map.update({str(image[pixel.y][pixel.x]): 0})
+            color_map[str(image[pixel.y][pixel.x])] += 1
             #if we have looked at a quarter of the tile we already will know the most prevalent color
             if sum(color_map.values()) > (image.shape[0] * image.shape[1])/4:
                 break
@@ -59,3 +62,14 @@ class Tile:
         #all other colors
         else:
             self.color = f'{color_list[0]}, {color_list[1]}, {color_list[2]}'
+
+    def get_perimeter(self):
+        for pixel in self.coords:
+            on_perimeter = False
+            for y_off in range(-1, 2):
+                for x_off in range(-1, 2):
+                    if (x_off == 0 or y_off == 0) and not (x_off == 0 and y_off == 0):
+                        if self.board_list[pixel.y + y_off][pixel.x + x_off] is not self:
+                            on_perimeter = True
+            if on_perimeter:
+                self.perimeter.append(pixel)
