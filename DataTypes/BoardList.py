@@ -1,11 +1,12 @@
-from functools import singledispatchmethod
 from operator import methodcaller
+from typing import overload
 
 import numpy as np
 
-import ImageStuff
-from DataTypes.Board import Board
+import ColorStuff
 from DataTypes.Point import Point
+from OutdatedClasses.Board import Board
+from DataTypes.Pixel import Pixel
 from DataTypes.Tile import Tile
 from DataTypes.YellowNumber import YellowNumber
 from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
@@ -17,7 +18,7 @@ class BoardList:
         #nah that docstr is never getting written >:3
         self.board_list = [[None for x in range(shape[1])] for y in range(shape[0])]
         self.yellow_number_set: set[YellowNumber] = set()
-        self.point_set: set[Point] = set()
+        self.pixel_set: set[Pixel] = set()
         self.tile_set: set[Tile] = set()
 
     def get_yellow_numbers(self, board_data: Board):
@@ -35,10 +36,10 @@ class BoardList:
                     board_data.binary_image[pixel.y][pixel.x] = CommonGrayscaleColors.BACKGROUND.value
 
 
-    def get_points(self, board_data: Board):
+    def get_pixels(self, board_data: Board):
         """finds all points in the point image then cleans them up"""
-        self.find_all_points(board_data = board_data)
-        self.clean_point_set()
+        self.find_all_pixels(board_data = board_data)
+        self.clean_pixel_set()
 
     def get_tiles(self, board_data: Board):
         """finds all tiles in the point image then cleans them up"""
@@ -121,14 +122,14 @@ class BoardList:
         print(f'{len(self.tile_set)} in set of type Tile')
 
 
-    def clean_point_set(self):
-        self.clean_set(outer_set = self.point_set, set_type = Point)
+    def clean_pixel_set(self):
+        self.clean_set(outer_set = self.pixel_set, set_type = Pixel)
 
     def find_all_in_image(self ,image: np.ndarray , obj_color: list[int] | tuple[int], outer_set: set, set_type):
         """finds all obj_color in image and maps it onto board_list with type set_type"""
         for y in range(len(self.board_list)):
             for x in range(len(self.board_list[0])):
-                if ImageStuff.color_equal(image[y][x], obj_color):
+                if ColorStuff.color_equal(image[y][x], obj_color):
                     self.add_to_set(y = y, x = x, outer_set = outer_set, set_type = set_type)
 
     def find_all_yellow_numbers(self, board_data: Board):
@@ -145,12 +146,12 @@ class BoardList:
         | (this is just a find_all_in_image call but with preset values)"""
         self.find_all_in_image(image = board_data.points_image, obj_color = CommonRGBColors.tile.value, outer_set = self.tile_set, set_type = Tile)
 
-    def find_all_points(self, board_data: Board):
+    def find_all_pixels(self, board_data: Board):
         """
         | goes through board_data.points_image and finds all points in it
         |
         | (this is just a find_all_in_image call but with preset values)"""
-        self.find_all_in_image(image = board_data.points_image, obj_color = CommonRGBColors.point.value, outer_set = self.point_set, set_type = Point)
+        self.find_all_in_image(image = board_data.points_image, obj_color = CommonRGBColors.point.value, outer_set = self.pixel_set, set_type = Pixel)
 
     def add_to_set(self, y, x, outer_set, set_type):
         """| Adds a new object of set_type to the outer_set if it is not next to another object of set_type
@@ -173,51 +174,54 @@ class BoardList:
                     if other_pixel != pixel:
                         pixel.add_adjacent(new = other_pixel)
 
-    @singledispatchmethod
+    @overload
     def get_obj_at_coord(self, coord_list:list[int]):
         """
-        | implementation 1:
-        | inputs = (coord: list[int], thing: Any)
-        | gets the point at y = coord[0],x = coord[1] in board list
+        | gets the obj at y = coord[0],x = coord[1] in board list
         |
-        | implementation 2:
-        | inputs = (y: int, x: int)
-        | gets the point at y = y,x = x in board list
-        |
-        | implementation 3:
-        | inputs = (coord: dict[y: int, x: int])
-        | gets the point at y = coord["y"],x = coord["x"] in board list"""
+        | overloads available for point and dict input
+        """
         return self.board_list[coord_list[0]][coord_list[1]]
 
-    @get_obj_at_coord.register
-    def _(self, coord_dict: dict):
+    @overload
+    def get_obj_at_coord(self, coord_dict: dict):
+        """
+        | gets the obj at y = coord["y"],x = coord["x"] in board list
+        |
+        | overloads available for point and list input
+        """
         return self.board_list[coord_dict["y"]][coord_dict["x"]]
 
-    @get_obj_at_coord.register
-    def _(self, y:int, x: int):
-        return self.board_list[y][x]
+    def get_obj_at_coord(self, point: Point):
+        """
+        | gets the obj at point in board_list
+        |
+        | overloads available for list and dict input
+        """
+        return self.board_list[point.y][point.x]
 
-
-    @singledispatchmethod
+    @overload
     def set_coord(self, coord: list[int], thing):
         """
-        | implementation 1:
-        | inputs = (coord: list[int], thing: Any)
-        | sets the point at y = coord[0],x = coord[1] in board list to thing
+        | sets y = coord[0] x = coord[1] in board_list to thing
         |
-        | implementation 2:
-        | inputs = (y: int, x: int , thing: Any)
-        | sets the point at y = y,x = x in board list to thing
-        |
-        | implementation 3:
-        | inputs = (coord: dict[y: int, x: int] , thing: Any)
-        | sets the point at y = coord["y"],x = coord["x"] in board list to thing"""
+        | overloads available for point and dict input
+        """
         self.board_list[coord[0]][coord[1]] = thing
 
-    @set_coord.register
-    def _(self, y: int, x: int, thing):
-        self.board_list[y][x] = thing
-
-    @set_coord.register
-    def _(self, coord: dict, thing):
+    @overload
+    def set_coord(self, coord: dict, thing):
+        """
+        | sets y = coord["y"], x = coord["x"] in board_list to thing
+        |
+        | overloads available for point and list input
+        """
         self.board_list[coord["y"]][coord["x"]] = thing
+
+    def set_coord(self, point: Point, thing):
+        """
+        | sets point in board_list to thing
+        |
+        | overloads available for list and dict input
+        """
+        self.board_list[point.y][point.x] = thing

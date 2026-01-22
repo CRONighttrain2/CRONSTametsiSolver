@@ -1,31 +1,9 @@
-from functools import reduce
-
 import cv2
 import numpy as np
-from pynput import keyboard
-import pyautogui
 
-from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
+from ColorStuff import color_equal, color_size_correct
+from ProjectEnums import CommonGrayscaleColors
 
-
-def color_rgb(color):
-    """detects if a color is not an int"""
-    try:
-        len(color)
-    except TypeError:
-        return False
-    return True
-
-def get_screenshot_on_key_press() -> np.ndarray:
-    """
-    creates a screenshot when left alt is pressed and turns it into a numpi n dimensional array
-    """
-    with keyboard.Events() as events:
-        for event in events:
-            if event.key == keyboard.Key.alt_l:
-                pyautogui.screenshot('Images/board_image.png')
-                return cv2.imread("Images/board_image.png")
-        return None
 
 def remove_UI(image: np.ndarray, replacement_color)-> np.ndarray:
     """creates a copy of image and removes the UI from the copy"""
@@ -78,27 +56,6 @@ def remove_adjacency_symbol(image: np.ndarray, replacement_color)-> np.ndarray:
             new_image[area_y][area_x] = replacement_color
     return new_image
 
-def color_equal(color1, color2):
-    """checks if 2 colors are equal"""
-    #checks if the colors are the same length
-    try:
-        if not len(color1) == len(color2):
-            return False
-    except TypeError:
-        return color1 == color2
-    return reduce(lambda bool1, bool2: bool1 and bool2, [color1[index] == color2[index] for index in range(0, len(color1))])
-
-def color_size_correct(image: np.ndarray, color) -> bool:
-    """checks if the color is the correct size for the image"""
-    #make sure that the color is the correct size for the colorspace of the image
-    if len(image.shape) == 2 and type(color) != int:
-        return False
-    elif len(image.shape) > 2:
-        if type(color) == int:
-            return False
-        elif image.shape[2] != len(color):
-            return False
-    return True
 
 def create_binary_image(image: np.ndarray, color):
     """creates a copy of image that is grayscale and turns all pixels that are color in that image into white and all others into black

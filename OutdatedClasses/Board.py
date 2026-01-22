@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+import ColorStuff
 import ImageStuff
 import ProjectEnums
 
@@ -17,7 +18,7 @@ class Board:
         self.points_image: np.ndarray = None
     
     def find_adjacency_type(self):
-        return ImageStuff.color_equal(self.image[(39/1080) * self.image.shape[0]][(1849/1920) * self.image.shape[1]], ProjectEnums.CommonRGBColors.yellow.value) and ImageStuff.color_equal(self.image[71][1849], ProjectEnums.CommonRGBColors.yellow.value)
+        return ColorStuff.color_equal(self.image[39][1849], ProjectEnums.CommonRGBColors.yellow.value) and ColorStuff.color_equal(self.image[71][1849], ProjectEnums.CommonRGBColors.yellow.value)
 
     def create_binary_image_of_background(self):
         """turns image into a binary image with the background as white then stores it in binary_image"""
@@ -34,5 +35,5 @@ class Board:
         self.points_image[dst > 0.005 * dst.max()] = ProjectEnums.CommonRGBColors.point.value
         for y in range(self.binary_image.shape[0]):
             for x in range(self.binary_image.shape[1]):
-                if ImageStuff.color_equal(self.binary_image[y][x], ProjectEnums.CommonGrayscaleColors.TILE.value):
+                if ColorStuff.color_equal(self.binary_image[y][x], ProjectEnums.CommonGrayscaleColors.TILE.value):
                     self.points_image[y][x] = ProjectEnums.CommonRGBColors.tile.value

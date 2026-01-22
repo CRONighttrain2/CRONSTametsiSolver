@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from DataTypes.Point import Point
+from DataTypes.Pixel import Pixel
 from ProjectEnums import CommonRGBColors
 from DataTypes.Tile import Tile
 
@@ -12,8 +12,8 @@ def create_board_list_debug_image(url_name: str, image, board_list):
     yellow_number_count = 0
     point_count = 0
     tile_map: dict[Tile, int] = dict()
-    point_map: dict[Point, int] = dict()
-    yellow_number_map: dict[Point, int] = dict()
+    point_map: dict[Pixel, int] = dict()
+    yellow_number_map: dict[Pixel, int] = dict()
     for y in range(len(board_list)):
         for x in range(len(board_list[0])):
             if board_list[y][x] is None:
@@ -24,7 +24,7 @@ def create_board_list_debug_image(url_name: str, image, board_list):
                     tile_count += 1
                     tile_count = tile_count % 24
                 debug_image[y][x] = [0, 255, tile_map[board_list[y][x]]]
-            elif board_list[y][x].__class__ == Point:
+            elif board_list[y][x].__class__ == Pixel:
                 if board_list[y][x] not in point_map.keys():
                     point_map[board_list[y][x]] = point_count * 10
                     point_count += 1

@@ -1,7 +1,7 @@
 import numpy as np
 
 from DataTypes.GraphNode import Node
-from DataTypes.Pixel import Pixel
+from DataTypes.Point import Point
 
 
 class Tile:
@@ -10,15 +10,15 @@ class Tile:
         board_list[y][x] = self
         self.adjacent = set()
         self.size = 1
-        self.coords: list[Pixel] = list()
-        self.coords.append(Pixel(y = y, x = x))
+        self.coords: list[Point] = list()
+        self.coords.append(Point(y = y, x = x))
         self.color = None
         self.graph_node = Node()
-        self.perimeter: list[Pixel] = list()
+        self.perimeter: list[Point] = list()
 
     def add_coord(self, y, x):
         self.board_list[y][x] = self
-        self.coords.append(Pixel(y = y, x = x))
+        self.coords.append(Point(y = y, x = x))
         self.size += 1
 
     def get_size(self):
@@ -38,7 +38,7 @@ class Tile:
                     self.perimeter.append(pixel)
                 for pixel in other_tile.coords:
                     self.board_list[pixel.y][pixel.x] = self
-                    self.coords.append(Pixel(y = pixel.y, x = pixel.x))
+                    self.coords.append(Point(y = pixel.y, x = pixel.x))
                     self.size += 1
 
     def find_majority_color(self, image: np.ndarray):
