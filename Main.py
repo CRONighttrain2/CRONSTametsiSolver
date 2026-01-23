@@ -6,7 +6,7 @@ import cv2
 import UpdatedImageStuff
 from OutdatedClasses.Board import Board
 from DataTypes.BoardList import BoardList
-from DataTypes.Tile import Tile
+from OutdatedClasses.Tile import Tile
 
 def walk_to_next_tile(y, x, y_off, x_off, board_list, current_tile: Tile):
     """uses raytracing to find if a tile is adjacent to another tile at a given point"""
@@ -15,7 +15,7 @@ def walk_to_next_tile(y, x, y_off, x_off, board_list, current_tile: Tile):
     #if else is in here cause level 40's gaps between tiles were too large
     for off_off in range(2,8 if (x_off == 0 or y_off == 0) else 6):
         if board_list[y + (y_off * off_off)][x + (x_off * off_off)].__class__ == Tile:
-            current_tile.graph_node.add_node(new_node = board_list[y + (y_off * off_off)][x + (x_off * off_off)].graph_node)
+            current_tile.graph_node.add_connected_node(new_node = board_list[y + (y_off * off_off)][x + (x_off * off_off)].graph_node)
         elif board_list[y + (y_off * off_off)][x + (x_off * off_off)] is not None:
             return
 
@@ -66,8 +66,8 @@ if __name__ == '__main__':
                 graph_node_set.add(tile.graph_node)
                 for other_tile in point.adjacent_tiles:
                     if other_tile != tile:
-                        tile.graph_node.add_node(new_node = other_tile.graph_node)
-                        other_tile.graph_node.add_node(new_node = tile.graph_node)
+                        tile.graph_node.add_connected_node(new_node = other_tile.graph_node)
+                        other_tile.graph_node.add_connected_node(new_node = tile.graph_node)
     else:
         print("-using non-point based adjacency")
         for tile in board_list.tile_set:

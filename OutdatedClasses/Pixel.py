@@ -1,4 +1,4 @@
-from DataTypes.Tile import Tile
+from OutdatedClasses.Tile import Tile
 from DataTypes.Point import Point
 
 

@@ -15,5 +15,8 @@ class Point:
     def as_dict(self) -> dict[str, int]:
         return {"y": self.y, "x": self.x}
 
+    def copy(self):
+        return Point(y = self.y, x = self.x)
+
     def offset(self, y_off: int, x_off: int):
-        return Point(y =self.y + y_off, x =self.x + x_off)
+        return Point(y = self.y + y_off, x = self.x + x_off)

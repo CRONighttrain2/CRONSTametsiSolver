@@ -43,9 +43,8 @@ class YellowNumber:
             for y_off in range(-1, 2):
                 for x_off in range(-1, 2):
                         if not (x_off == 0 and y_off == 0):
-                            new_pixel = pixel.offset(y_off = y_off, x_off = x_off)
                             if self.board_list[pixel.y + y_off][pixel.x + x_off] is None:
-                                if not ColorStuff.color_equal(board_image[pixel.y + y_off][pixel.x + x_off], ProjectEnums.CommonRGBColors.background.value):
+                                if not ColorStuff.color_equal(board_image[pixel.y + y_off][pixel.x + x_off], ProjectEnums.ColorEnums.CommonGameColors.YELLOW.value):
                                     new_pixels.append(Point(y = pixel.y + y_off, x = pixel.x + x_off))
         for pixel in new_pixels:
             if pixel not in self.coords:

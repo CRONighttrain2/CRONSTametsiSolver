@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-from DataTypes.Pixel import Pixel
+from OutdatedClasses.Pixel import Pixel
 from ProjectEnums import CommonRGBColors
-from DataTypes.Tile import Tile
+from OutdatedClasses.Tile import Tile
 
 
 def create_board_list_debug_image(url_name: str, image, board_list):

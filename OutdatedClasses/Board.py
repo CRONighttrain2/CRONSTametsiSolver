@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 import ColorStuff
-import ImageStuff
+import OutdatedClasses.ImageStuff as ImageStuff
 import ProjectEnums
 
 

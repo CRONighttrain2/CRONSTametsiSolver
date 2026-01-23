@@ -1,21 +1,22 @@
 from operator import methodcaller
-from typing import overload
 
 import numpy as np
 
 import ColorStuff
 from DataTypes.Point import Point
 from OutdatedClasses.Board import Board
-from DataTypes.Pixel import Pixel
-from DataTypes.Tile import Tile
-from DataTypes.YellowNumber import YellowNumber
-from ProjectEnums import CommonRGBColors, CommonGrayscaleColors
+from OutdatedClasses.Pixel import Pixel
+from OutdatedClasses.Tile import Tile
+from OutdatedClasses.YellowNumber import YellowNumber
+from ProjectEnums import ColorEnums
 
 
 class BoardList:
     def __init__(self, shape: tuple[int, int, int] | tuple[int, int]):
         """TODO: WRITE THIS DOCSTR"""
         #nah that docstr is never getting written >:3
+        #
+        # 2 months later and it still isn't written, I hate this class in particular btw :3
         self.board_list = [[None for x in range(shape[1])] for y in range(shape[0])]
         self.yellow_number_set: set[YellowNumber] = set()
         self.pixel_set: set[Pixel] = set()
@@ -33,7 +34,7 @@ class BoardList:
             #we need to remove the yellow numbers so it doesn't mess up the point image
             for yellow_number in self.yellow_number_set:
                 for pixel in yellow_number.coords:
-                    board_data.binary_image[pixel.y][pixel.x] = CommonGrayscaleColors.BACKGROUND.value
+                    board_data.binary_image[pixel.y][pixel.x] = ColorEnums.CommonGameColors.BACKGROUND.value
 
 
     def get_pixels(self, board_data: Board):
@@ -137,21 +138,21 @@ class BoardList:
         | goes through board_data.image and finds all yellow numbers in it
         |
         | (this is just a find_all_in_image call but with preset values)"""
-        self.find_all_in_image(image = board_data.image, obj_color = CommonRGBColors.yellow.value, outer_set = self.yellow_number_set, set_type = YellowNumber)
+        self.find_all_in_image(image = board_data.image, obj_color = ColorEnums.CommonGameColors.YELLOW.value, outer_set = self.yellow_number_set, set_type = YellowNumber)
 
     def find_all_tiles(self, board_data: Board):
         """
         | goes through board_data.points_image and finds all tiles in it
         |
         | (this is just a find_all_in_image call but with preset values)"""
-        self.find_all_in_image(image = board_data.points_image, obj_color = CommonRGBColors.tile.value, outer_set = self.tile_set, set_type = Tile)
+        self.find_all_in_image(image = board_data.points_image, obj_color = ColorEnums.CommonProgramColors.RGBColors.TILE.value, outer_set = self.tile_set, set_type = Tile)
 
     def find_all_pixels(self, board_data: Board):
         """
         | goes through board_data.points_image and finds all points in it
         |
         | (this is just a find_all_in_image call but with preset values)"""
-        self.find_all_in_image(image = board_data.points_image, obj_color = CommonRGBColors.point.value, outer_set = self.pixel_set, set_type = Pixel)
+        self.find_all_in_image(image = board_data.points_image, obj_color = ColorEnums.CommonProgramColors.RGBColors.VERTEX.value, outer_set = self.pixel_set, set_type = Pixel)
 
     def add_to_set(self, y, x, outer_set, set_type):
         """| Adds a new object of set_type to the outer_set if it is not next to another object of set_type
@@ -174,54 +175,27 @@ class BoardList:
                     if other_pixel != pixel:
                         pixel.add_adjacent(new = other_pixel)
 
-    @overload
-    def get_obj_at_coord(self, coord_list:list[int]):
+    def get_obj_at_coord(self, point : list[int] | dict[str,int] | Point):
         """
-        | gets the obj at y = coord[0],x = coord[1] in board list
-        |
-        | overloads available for point and dict input
+        | gets the obj at:
+        | (y = list[0] | dict["y"] | Point.y, x = list[1] | dict["x"] | Point.x)
         """
-        return self.board_list[coord_list[0]][coord_list[1]]
+        if type(point) == list:
+            return self.board_list[point[0]][point[1]]
+        elif type(point) == dict:
+            return self.board_list[point["y"]][point["x"]]
+        else:
+            return self.board_list[point.y][point.x]
 
-    @overload
-    def get_obj_at_coord(self, coord_dict: dict):
+    def set_coord(self, point : list[int] | dict[str,int] | Point, thing):
         """
-        | gets the obj at y = coord["y"],x = coord["x"] in board list
-        |
-        | overloads available for point and list input
+        | sets the point:
+        | (y = list[0] | dict["y"] | Point.y, x = list[1] | dict["x"] | Point.x)
+        | in board_list to thing
         """
-        return self.board_list[coord_dict["y"]][coord_dict["x"]]
-
-    def get_obj_at_coord(self, point: Point):
-        """
-        | gets the obj at point in board_list
-        |
-        | overloads available for list and dict input
-        """
-        return self.board_list[point.y][point.x]
-
-    @overload
-    def set_coord(self, coord: list[int], thing):
-        """
-        | sets y = coord[0] x = coord[1] in board_list to thing
-        |
-        | overloads available for point and dict input
-        """
-        self.board_list[coord[0]][coord[1]] = thing
-
-    @overload
-    def set_coord(self, coord: dict, thing):
-        """
-        | sets y = coord["y"], x = coord["x"] in board_list to thing
-        |
-        | overloads available for point and list input
-        """
-        self.board_list[coord["y"]][coord["x"]] = thing
-
-    def set_coord(self, point: Point, thing):
-        """
-        | sets point in board_list to thing
-        |
-        | overloads available for list and dict input
-        """
-        self.board_list[point.y][point.x] = thing
+        if type(point) == list:
+            self.board_list[point[0]][point[1]] = thing
+        elif type(point) == dict:
+            self.board_list[point["y"]][point["x"]] = thing
+        else:
+            self.board_list[point.y][point.x] = thing
