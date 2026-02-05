@@ -1,4 +1,4 @@
-import ColorStuff
+from HelperClasses import ColorStuff
 import ProjectEnums
 from DataTypes.Point import Point
 
@@ -44,7 +44,7 @@ class YellowNumber:
                 for x_off in range(-1, 2):
                         if not (x_off == 0 and y_off == 0):
                             if self.board_list[pixel.y + y_off][pixel.x + x_off] is None:
-                                if not ColorStuff.color_equal(board_image[pixel.y + y_off][pixel.x + x_off], ProjectEnums.ColorEnums.CommonGameColors.YELLOW.value):
+                                if not ColorStuff.color_equal(board_image[pixel.y + y_off][pixel.x + x_off], ProjectEnums.CommonRGBColors.yellow.value):
                                     new_pixels.append(Point(y = pixel.y + y_off, x = pixel.x + x_off))
         for pixel in new_pixels:
             if pixel not in self.coords:

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 import ProjectEnums
-from ColorStuff import color_equal, color_size_correct
+from HelperClasses.ColorStuff import color_equal, color_size_correct
 
 def remove_UI(image: np.ndarray, replacement_color)-> np.ndarray:
     """creates a copy of image and removes the UI from the copy"""
@@ -73,7 +73,7 @@ def create_binary_image(image: np.ndarray, color):
     for y, row in enumerate(image):
         for x, pixel in enumerate(row):
             if color_equal(pixel, color):
-                new_image[y][x] = ProjectEnums.ColorEnums.CommonProgramColors.GrayscaleColors.BACKGROUND.value
+                new_image[y][x] = ProjectEnums.CommonGrayscaleColors.BACKGROUND.value
             else:
-                new_image[y][x] = ProjectEnums.ColorEnums.CommonProgramColors.GrayscaleColors.TILE.value
+                new_image[y][x] = ProjectEnums.CommonGrayscaleColors.TILE.value
     return new_image

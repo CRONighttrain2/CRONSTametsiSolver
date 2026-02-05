@@ -13,7 +13,7 @@ class Tile:
         self.coords: list[Point] = list()
         self.coords.append(Point(y = y, x = x))
         self.color = None
-        self.graph_node = Node()
+        self.graph_node = Node(self)
         self.perimeter: list[Point] = list()
 
     def add_coord(self, y, x):

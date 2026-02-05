@@ -2,13 +2,13 @@ from operator import methodcaller
 
 import numpy as np
 
-import ColorStuff
+from HelperClasses import ColorStuff
 from DataTypes.Point import Point
 from OutdatedClasses.Board import Board
 from OutdatedClasses.Pixel import Pixel
 from OutdatedClasses.Tile import Tile
 from OutdatedClasses.YellowNumber import YellowNumber
-from ProjectEnums import ColorEnums
+from ProjectEnumsV2 import ColorEnums
 
 
 class BoardList:

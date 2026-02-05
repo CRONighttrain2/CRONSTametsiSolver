@@ -1,80 +1,47 @@
+import cv2
 import numpy as np
 
 import Debug
-import cv2
-
-import UpdatedImageStuff
-from OutdatedClasses.Board import Board
-from DataTypes.BoardList import BoardList
-from OutdatedClasses.Tile import Tile
-
-def walk_to_next_tile(y, x, y_off, x_off, board_list, current_tile: Tile):
-    """uses raytracing to find if a tile is adjacent to another tile at a given point"""
-    if board_list[y + y_off][x + x_off] is not None:
-        return
-    #if else is in here cause level 40's gaps between tiles were too large
-    for off_off in range(2,8 if (x_off == 0 or y_off == 0) else 6):
-        if board_list[y + (y_off * off_off)][x + (x_off * off_off)].__class__ == Tile:
-            current_tile.graph_node.add_connected_node(new_node = board_list[y + (y_off * off_off)][x + (x_off * off_off)].graph_node)
-        elif board_list[y + (y_off * off_off)][x + (x_off * off_off)] is not None:
-            return
-
-def find_all_colors(tile_set) -> set:
-    colors = set()
-    for tile in tile_set:
-        tile.find_majority_color(image = board_data.image)
-    for tile in tile_set:
-        if not tile.graph_node.revealed:
-            colors.add(tile.color)
-    return colors
+from HelperClasses import ImageStuffV2
+from DataTypes.BoardGraph import BoardGraph
+from DataTypes.BoardImages import BoardImages
+from ProjectEnumsV2 import ColorEnums
 
 if __name__ == '__main__':
     print("press left alt to take screenshot")
-    image: np.ndarray = UpdatedImageStuff.get_screenshot_on_key_press()
-    print("screenshot taken, starting analysis")
-    board_data = Board(board_image = image)
-    board_list = BoardList(shape = board_data.image.shape)
+    image: np.ndarray = ImageStuffV2.get_screenshot_on_key_press()
+    print("creating board images")
+    board_images: BoardImages = BoardImages(image = image)
+    board_graph: BoardGraph = BoardGraph(shape = board_images.board_image)
+    print("board images created")
 
-    board_list.get_yellow_numbers(board_data = board_data)
-    cv2.imwrite(filename = "Images/cleaned_edge_image.png",img = board_data.binary_image)
+    cv2.imwrite(filename = "cleaned_board_image.png", img = board_images.board_image.image)
+    cv2.imwrite("edge_image.png", board_images.binary_image.image)
 
-    print("finding points")
-    board_data.create_point_image()
-    print("points found")
-    cv2.imwrite(filename = "Images/point_image.png",img = board_data.points_image)
+    print("finding all yellow numbers")
+    board_graph.yellow_number_set.find_all_type_in_image(image = board_images.board_image, type_color = ColorEnums.CommonGameColors.YELLOW.value)
+    if len(board_graph.yellow_number_set.area_set) > 0:
+        board_graph.yellow_number_set.clean_set()
+        for yellow_area in board_graph.yellow_number_set.area_set:
+            for iterator in range(2):
+                yellow_area.expand(board_images.board_image)
+            yellow_area.remove_from_image(board_images.binary_image)
+    print("yellow numbers removed")
+    cv2.imwrite(filename = "Images/cleaned_edge_image.png", img = board_images.binary_image.image)
+#
+    print("creating vertex image")
+    board_images.create_vertex_image()
+    print("vertex image created")
+    cv2.imwrite(filename = "Images/point_image.png", img = board_images.vertex_image.image)
+#
+    print("finding all tiles")
+    board_graph.tile_set.find_all_type_in_image(board_images.vertex_image, ColorEnums.CommonProgramColors.RGBColors.TILE.value)
+    board_graph.tile_set.clean_set()
+    print("found all tiles")
 
-    board_list.get_pixels(board_data = board_data)
-    board_list.get_tiles(board_data = board_data)
+    print("finding all vertexes")
+    board_graph.vertex_set.find_all_type_in_image(board_images.vertex_image, ColorEnums.CommonProgramColors.RGBColors.VERTEX.value)
+    board_graph.vertex_set.clean_set()
+    print("found all vertexes")
 
-    Debug.create_board_list_debug_image(url_name = "Debug_images/board_list_debug_image.png",image = board_data.points_image,board_list = board_list.board_list)
-
-    color_set = find_all_colors(tile_set = board_list.tile_set)
-
-    print("creating graph from tile set")
-    graph_node_set = set()
-    if board_data.point_based_adjacency:
-        print("-using point based adjacency")
-        for point in board_list.pixel_set:
-            for pixel in point.coords:
-                for y_off in range(-1, 2):
-                    for x_off in range(-1, 2):
-                        if not (x_off == 0 and y_off == 0):
-                            if  board_list.get_obj_at_coord(pixel.offset(y_off, x_off).as_dict()).__class__ == Tile:
-                                point.adjacent_tiles.add( board_list.get_obj_at_coord(pixel.offset(y_off, x_off).as_dict()))
-        for point in board_list.pixel_set:
-            for tile in point.adjacent_tiles:
-                graph_node_set.add(tile.graph_node)
-                for other_tile in point.adjacent_tiles:
-                    if other_tile != tile:
-                        tile.graph_node.add_connected_node(new_node = other_tile.graph_node)
-                        other_tile.graph_node.add_connected_node(new_node = tile.graph_node)
-    else:
-        print("-using non-point based adjacency")
-        for tile in board_list.tile_set:
-            graph_node_set.add(tile.graph_node)
-            for pixel in tile.coords:
-                for y_off in range(-1, 2):
-                    for x_off in range(-1, 2):
-                        if not (x_off == 0 and y_off == 0):
-                            walk_to_next_tile(y = pixel.y, x = pixel.x,y_off = y_off,x_off = x_off,board_list = board_list.board_list,current_tile = tile)
-    print("graph created")
+    Debug.create_board_list_debug_image(url_name = "Debug_images/board_list_debug_image.png",image = board_images.vertex_image.image,board_list = board_graph.board_graph)

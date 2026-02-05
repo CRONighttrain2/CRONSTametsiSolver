@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+from DataTypes.BoardListDataAreaClasses import TileArea, VertexArea
 from OutdatedClasses.Pixel import Pixel
 from ProjectEnums import CommonRGBColors
 from OutdatedClasses.Tile import Tile
@@ -18,13 +19,13 @@ def create_board_list_debug_image(url_name: str, image, board_list):
         for x in range(len(board_list[0])):
             if board_list[y][x] is None:
                 debug_image[y][x] = CommonRGBColors.debug_white.value
-            elif board_list[y][x].__class__ == Tile:
+            elif board_list[y][x].__class__ == TileArea:
                 if board_list[y][x] not in tile_map.keys():
                     tile_map[board_list[y][x]] = tile_count * 10
                     tile_count += 1
                     tile_count = tile_count % 24
                 debug_image[y][x] = [0, 255, tile_map[board_list[y][x]]]
-            elif board_list[y][x].__class__ == Pixel:
+            elif board_list[y][x].__class__ == VertexArea:
                 if board_list[y][x] not in point_map.keys():
                     point_map[board_list[y][x]] = point_count * 10
                     point_count += 1
